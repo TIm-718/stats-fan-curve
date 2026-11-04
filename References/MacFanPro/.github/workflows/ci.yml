@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and test Debug and Release
+        run: bash Scripts/test.sh --all-configurations
+
+      - name: Check localization packaging
+        run: bash Scripts/check-localization-package.sh

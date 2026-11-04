@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository == 'macfanpro/macfanpro'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check release notes
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: test -s "docs/releases/${RELEASE_TAG#v}.md"
+      - name: Test Debug and Release
+        run: bash Scripts/test.sh --all-configurations
+      - name: Build distribution
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: bash Scripts/package-release.sh
+      - name: Check packaged resources
+        run: bash Scripts/check-localization-package.sh .build/release
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        # Publish only after the downloaded artifact has passed local acceptance.
+        run: gh release create "$RELEASE_TAG" dist/*.tar.gz dist/*.dmg dist/*.dmg.sha256 dist/SHA256SUMS dist/install.sh dist/install.sh.sha256 --verify-tag --draft --title "MacFanPro ${RELEASE_TAG#v}" --notes-file "docs/releases/${RELEASE_TAG#v}.md"
